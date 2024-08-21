@@ -324,5 +324,3 @@ uvicorn main:app --reload
 - **Banco de Dados**: Embora este exemplo utilize SQLite para simplicidade, em produção é recomendável usar um banco de dados mais robusto como PostgreSQL ou MySQL.
 - **CORS**: A configuração de CORS na aplicação permite que ela seja acessada de diferentes domínios. Configure-o de acordo com suas necessidades de segurança.
 - **Limitação de Taxa**: A aplicação utiliza SlowAPI para limitar a taxa de requisições a determinados endpoints, protegendo contra abusos e garantindo a estabilidade do sistema.
-
-Essa documentação cobre todos os aspectos essenciais da API que você desenvolveu. Com ela, qualquer desenvolvedor deve ser capaz de entender, configurar e usar os endpoints da API de forma eficaz. Se precisar adicionar mais detalhes ou modificar algo, estarei aqui para ajudar!
