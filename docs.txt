@@ -1,0 +1,328 @@
+### Documentação da API FastAPI
+
+#### Visão Geral
+
+Esta API foi desenvolvida utilizando FastAPI, um framework moderno e de alta performance para a criação de APIs RESTful em Python. A API centraliza a autenticação de usuários, permitindo que desenvolvedores façam registro, login e obtenham informações sobre o usuário autenticado utilizando JSON Web Tokens (JWT). Além disso, inclui funcionalidades administrativas para gerenciar usuários, com limitação de taxa para proteger contra abusos.
+
+### 1. **Configuração e Instalação**
+
+#### 1.1. **Dependências**
+As principais dependências utilizadas neste projeto são:
+
+- **FastAPI**: Framework principal para a criação da API.
+- **Uvicorn**: Servidor ASGI para rodar a aplicação FastAPI.
+- **SQLAlchemy**: ORM utilizado para interagir com o banco de dados.
+- **SQLite**: Banco de dados utilizado no ambiente de desenvolvimento.
+- **JWT (JSON Web Tokens)**: Para autenticação e autorização.
+- **Passlib**: Para hashing de senhas.
+- **Python-Jose**: Biblioteca usada para codificar e decodificar tokens JWT.
+- **Loguru**: Para logging detalhado no terminal.
+- **Pydantic**: Para validação de dados (vem incluído com FastAPI).
+- **Email-Validator**: Para validação de endereços de e-mail.
+- **Bcrypt**: Algoritmo para hashing de senhas (usado pelo `passlib`).
+- **SlowAPI**: Biblioteca usada para limitar a taxa de requisições.
+
+#### 1.2. **Instalação**
+Antes de iniciar a aplicação, todas as dependências devem ser instaladas. Para isso, é necessário rodar o seguinte comando dentro do ambiente virtual:
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. **Configuração do Projeto**
+
+#### 2.1. **Configurações Gerais**
+O arquivo `config.py` contém as principais configurações da aplicação, como a chave secreta utilizada para a criação de tokens JWT, o algoritmo de criptografia e o tempo de expiração dos tokens.
+
+Exemplo de configuração:
+
+```python
+import os
+
+class Settings:
+    SECRET_KEY = os.getenv("SECRET_KEY", "22446310")
+    ALGORITHM = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES = 30
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
+
+settings = Settings()
+```
+
+- **SECRET_KEY**: A chave secreta utilizada para assinar os tokens JWT.
+- **ALGORITHM**: O algoritmo utilizado para assinar os tokens JWT. Neste caso, HS256.
+- **ACCESS_TOKEN_EXPIRE_MINUTES**: Tempo de expiração dos tokens JWT em minutos.
+- **SQLALCHEMY_DATABASE_URL**: URL de conexão com o banco de dados. Em desenvolvimento, estamos usando SQLite.
+
+### 3. **Estrutura de Diretórios**
+
+A estrutura do projeto é a seguinte:
+
+```plaintext
+/api
+├── app/
+│   ├── __init__.py
+│   ├── models.py
+│   ├── routes/
+│   │   ├── __init__.py
+│   │   ├── auth.py
+│   │   └── admin.py
+│   └── services/
+│       ├── __init__.py
+│       └── auth_service.py
+├── main.py
+├── config.py
+└── requirements.txt
+```
+
+### 4. **Modelos e Banco de Dados**
+
+#### 4.1. **Modelos de Dados**
+O modelo principal da aplicação é o modelo `User`, que representa os usuários que se registram na aplicação.
+
+Exemplo do modelo `User`:
+
+```python
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from app.database import Base
+from datetime import datetime
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    username = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
+    is_active = Column(Boolean, default=True)
+    role = Column(String, default="user")  # Papel do usuário, ex: "user", "admin"
+    last_activity = Column(DateTime, default=datetime.utcnow)  # Última atividade do usuário
+```
+
+### 5. **Endpoints da API**
+
+A API possui os seguintes endpoints principais:
+
+#### 5.1. **Registro de Usuário**
+
+- **Endpoint**: `/register`
+- **Método HTTP**: `POST`
+- **Descrição**: Cria um novo usuário na aplicação.
+- **Corpo da Requisição**:
+
+```json
+{
+  "name": "John Doe",
+  "username": "johndoe",
+  "email": "johndoe@example.com",
+  "password": "password123"
+}
+```
+
+- **Resposta**:
+
+```json
+{
+  "message": "User registered successfully"
+}
+```
+
+- **Exemplo de Requisição**:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/register" -H "Content-Type: application/json" -d '{
+  "name": "John Doe",
+  "username": "johndoe",
+  "email": "johndoe@example.com",
+  "password": "password123"
+}'
+```
+
+#### 5.2. **Login de Usuário**
+
+- **Endpoint**: `/login`
+- **Método HTTP**: `POST`
+- **Descrição**: Autentica um usuário e retorna um token JWT.
+- **Corpo da Requisição**:
+
+```json
+{
+  "username": "johndoe",
+  "password": "password123"
+}
+```
+
+- **Resposta**:
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
+```
+
+- **Exemplo de Requisição**:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/login" -H "Content-Type: application/json" -d '{
+  "username": "johndoe",
+  "password": "password123"
+}'
+```
+
+#### 5.3. **Obter Dados do Usuário Autenticado**
+
+- **Endpoint**: `/me`
+- **Método HTTP**: `GET`
+- **Descrição**: Retorna as informações do usuário autenticado.
+- **Cabeçalhos**:
+  - `Authorization: Bearer <seu_token_jwt>`
+
+- **Resposta**:
+
+```json
+{
+  "id": 1,
+  "name": "John Doe",
+  "username": "johndoe",
+  "email": "johndoe@example.com"
+}
+```
+
+- **Exemplo de Requisição**:
+
+```bash
+curl -X GET "http://127.0.0.1:8000/me" -H "Authorization: Bearer seu_token_jwt"
+```
+
+#### 5.4. **Atualizar Dados do Usuário**
+
+- **Endpoint**: `/me`
+- **Método HTTP**: `PUT`
+- **Descrição**: Atualiza as informações do usuário autenticado.
+- **Cabeçalhos**:
+  - `Authorization: Bearer <seu_token_jwt>`
+- **Corpo da Requisição** (Exemplo de atualização):
+
+```json
+{
+  "name": "John Updated",
+  "email": "johnupdated@example.com",
+  "password": "newpassword123"
+}
+```
+
+- **Resposta**:
+
+```json
+{
+  "message": "User updated successfully",
+  "user": {
+    "id": 1,
+    "name": "John Updated",
+    "username": "johndoe",
+    "email": "johnupdated@example.com"
+  }
+}
+```
+
+#### 5.5. **Deletar Usuário**
+
+- **Endpoint**: `/me`
+- **Método HTTP**: `DELETE`
+- **Descrição**: Deleta a conta do usuário autenticado.
+- **Cabeçalhos**:
+  - `Authorization: Bearer <seu_token_jwt>`
+
+- **Resposta**:
+
+```json
+{
+  "message": "User deleted successfully"
+}
+```
+
+#### 5.6. **Administração de Usuários**
+
+- **Endpoint**: `/admin/users`
+- **Método HTTP**: `GET`
+- **Descrição**: Retorna a lista de todos os usuários cadastrados. **Acesso restrito a administradores**.
+- **Cabeçalhos**:
+  - `Authorization: Bearer <seu_token_jwt>`
+- **Limitação**: 10 requisições por minuto.
+
+- **Endpoint**: `/admin/users/total`
+- **Método HTTP**: `GET`
+- **Descrição**: Retorna o total de usuários cadastrados. **Acesso restrito a administradores**.
+- **Cabeçalhos**:
+  - `Authorization: Bearer <seu_token_jwt>`
+- **Limitação**: 5 requisições por minuto.
+
+- **Endpoint**: `/admin/users/online`
+- **Método HTTP**: `GET`
+- **Descrição**: Retorna o número de usuários online (última atividade nos últimos 5 minutos). **Acesso restrito a administradores**.
+- **Cabeçalhos**:
+  - `Authorization: Bearer <seu_token_jwt>`
+- **Limitação**: 5 requisições por minuto.
+
+- **
+
+Endpoint**: `/admin/users/{user_id}/suspend`
+- **Método HTTP**: `PUT`
+- **Descrição**: Suspende um usuário específico. **Acesso restrito a administradores**.
+- **Cabeçalhos**:
+  - `Authorization: Bearer <seu_token_jwt>`
+- **Limitação**: 3 requisições por minuto.
+
+- **Endpoint**: `/admin/users/{user_id}/activate`
+- **Método HTTP**: `PUT`
+- **Descrição**: Reativa a conta de um usuário específico. **Acesso restrito a administradores**.
+- **Cabeçalhos**:
+  - `Authorization: Bearer <seu_token_jwt>`
+- **Limitação**: 3 requisições por minuto.
+
+- **Endpoint**: `/admin/users/{user_id}/delete`
+- **Método HTTP**: `DELETE`
+- **Descrição**: Exclui a conta de um usuário específico. **Acesso restrito a administradores**.
+- **Cabeçalhos**:
+  - `Authorization: Bearer <seu_token_jwt>`
+- **Limitação**: 3 requisições por minuto.
+
+### 6. **Serviços de Autenticação**
+
+#### 6.1. **Hashing e Verificação de Senhas**
+
+- **Função `hash_password(password: str)`**:
+  - Recebe uma senha em texto claro e retorna o hash da senha usando o Passlib.
+
+- **Função `verify_password(plain_password: str, hashed_password: str)`**:
+  - Verifica se a senha em texto claro corresponde ao hash armazenado.
+
+#### 6.2. **Criação de Tokens JWT**
+
+- **Função `create_access_token(data: dict, expires_delta: timedelta | None = None)`**:
+  - Cria um token JWT assinado com a `SECRET_KEY` e um tempo de expiração definido.
+
+#### 6.3. **Obter Usuário Autenticado**
+
+- **Função `get_current_user`**:
+  - Decodifica o token JWT da requisição, valida-o, e retorna o usuário autenticado.
+
+### 7. **Execução da Aplicação**
+
+Para rodar a aplicação localmente, use o Uvicorn:
+
+```bash
+uvicorn main:app --reload
+```
+
+- **Nota**: O parâmetro `--reload` recarrega automaticamente a aplicação sempre que um arquivo é alterado, útil para o desenvolvimento.
+
+### 8. **Notas Finais**
+
+- **Segurança**: A `SECRET_KEY` usada para assinar os tokens JWT deve ser mantida em segredo e nunca compartilhada. Em ambientes de produção, essa chave deve ser armazenada como uma variável de ambiente.
+- **Banco de Dados**: Embora este exemplo utilize SQLite para simplicidade, em produção é recomendável usar um banco de dados mais robusto como PostgreSQL ou MySQL.
+- **CORS**: A configuração de CORS na aplicação permite que ela seja acessada de diferentes domínios. Configure-o de acordo com suas necessidades de segurança.
+- **Limitação de Taxa**: A aplicação utiliza SlowAPI para limitar a taxa de requisições a determinados endpoints, protegendo contra abusos e garantindo a estabilidade do sistema.
+
+Essa documentação cobre todos os aspectos essenciais da API que você desenvolveu. Com ela, qualquer desenvolvedor deve ser capaz de entender, configurar e usar os endpoints da API de forma eficaz. Se precisar adicionar mais detalhes ou modificar algo, estarei aqui para ajudar!

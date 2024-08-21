@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+
+<body>
+    <h2>Login</h2>
+    <form id="loginForm">
+        <label for="username">Username:</label><br>
+        <input type="text" id="username" name="username" required><br><br>
+        <label for="password">Password:</label><br>
+        <input type="password" id="password" name="password" required><br><br>
+        <button type="submit">Login</button>
+    </form>
+
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+
+            try {
+                const response = await fetch("http://127.0.0.1:8000/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ username: username, password: password })
+                });
+
+                const result = await response.json();
+                console.log(result);
+
+                if (response.ok && result.access_token) {
+                    alert("Login successful!");
+                    localStorage.setItem("authToken", result.access_token); // Armazena o token
+
+                    // Obter informações do usuário logado
+                    const userResponse = await fetch("http://127.0.0.1:8000/me", {
+                        method: "GET",
+                        headers: {
+                            "Authorization": `Bearer ${result.access_token}`
+                        }
+                    });
+
+                    const userInfo = await userResponse.json();
+                    console.log(userInfo);
+
+                    // Verificar o papel do usuário e redirecionar adequadamente
+                    if (userInfo.role === "admin" || userInfo.role === "root") {
+                        window.location.href = "root_dashboard.html"; // Redireciona para o painel de administração
+                    } else {
+                        window.location.href = "dashboard.html"; // Redireciona para o painel padrão
+                    }
+                } else {
+                    alert("Login failed! Please check your username and password.");
+                }
+            } catch (error) {
+                console.error("Failed to login:", error);
+                alert("An error occurred while trying to log in. Please try again later.");
+            }
+        });
+    </script>
+</body>
+
+</html>

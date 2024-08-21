@@ -1,0 +1,14 @@
+# requirements.txt
+
+fastapi
+sqlalchemy
+uvicorn[standard]
+fastapi-jwt-auth
+passlib
+python-jose
+loguru
+pydantic
+email-validator
+bcrypt
+slowapi
+

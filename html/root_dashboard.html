@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Root Dashboard</title>
+    <style>
+        /* Mantemos o mesmo estilo básico */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 10px 20px;
+            text-align: center;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-around;
+            background-color: #444;
+            padding: 10px 0;
+        }
+
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px 20px;
+        }
+
+        nav a:hover {
+            background-color: #555;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .content {
+            margin-top: 20px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .logout-btn {
+            background-color: #d9534f;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .logout-btn:hover {
+            background-color: #c9302c;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid black;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+
+        .action-btn {
+            padding: 5px 10px;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+        .suspend-btn {
+            background-color: #f0ad4e;
+            color: white;
+        }
+
+        .delete-btn {
+            background-color: #d9534f;
+            color: white;
+        }
+
+        .edit-btn {
+            background-color: #5bc0de;
+            color: white;
+        }
+
+        .active-status {
+            color: green;
+        }
+
+        .inactive-status {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Root Dashboard</h1>
+    </header>
+    <nav>
+        <a href="#" id="view-users">View Users</a>
+        <a href="#" id="view-stats">View Stats</a>
+        <a href="#" id="logout">Logout</a>
+    </nav>
+    <div class="container">
+        <div class="content">
+            <h2>Administrative Actions</h2>
+            <div id="admin-content">
+                <!-- Admin actions will be loaded here -->
+            </div>
+        </div>
+        <div id="stats-content">
+            <p id="total-users">Total Users: Loading...</p>
+            <p id="online-users">Online Users: Loading...</p>
+        </div>
+    </div>
+    
+    <!-- Incluindo jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <script>
+        // Função para buscar e exibir usuários
+        function fetchUsers() {
+            const token = localStorage.getItem("authToken");
+            if (!token) {
+                alert("No token found, please log in.");
+                window.location.href = "login.html";
+                return;
+            }
+    
+            $.ajax({
+                url: "http://127.0.0.1:8000/admin/users",
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                },
+                success: function(users) {
+                    let table = `<table><tr><th>ID</th><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr>`;
+                    users.forEach(user => {
+                        table += `
+                            <tr>
+                                <td>${user.id}</td>
+                                <td>${user.name}</td>
+                                <td>${user.username}</td>
+                                <td>${user.email}</td>
+                                <td>${user.role}</td>
+                                <td class="${user.is_active ? 'active-status' : 'inactive-status'}">${user.is_active ? 'Active' : 'Suspended'}</td>
+                                <td>
+                                    ${user.is_active ? 
+                                        `<button class="action-btn suspend-btn" onclick="suspendUser(${user.id})">Suspend</button>` :
+                                        `<button class="action-btn activate-btn" onclick="activateUser(${user.id})">Activate</button>`
+                                    }
+                                    <button class="action-btn delete-btn" onclick="deleteUser(${user.id})">Delete</button>
+                                    <button class="action-btn edit-btn" onclick="editUser(${user.id})">Edit</button>
+                                </td>
+                            </tr>`;
+                    });
+                    table += `</table>`;
+                    $('#admin-content').html(table);
+                },
+                error: function() {
+                    alert("Failed to load user data.");
+                }
+            });
+        }
+    
+        // Função para obter o total de usuários
+        function getTotalUsers() {
+            const token = localStorage.getItem("authToken");
+            $.ajax({
+                url: "http://127.0.0.1:8000/admin/users/total",
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                },
+                success: function(data) {
+                    $('#total-users').text(`Total Users: ${data.total_users}`);
+                },
+                error: function() {
+                    alert("Failed to fetch total users.");
+                }
+            });
+        }
+    
+        // Função para obter o total de usuários online
+        function getOnlineUsers() {
+            const token = localStorage.getItem("authToken");
+            $.ajax({
+                url: "http://127.0.0.1:8000/admin/users/online",
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                },
+                success: function(data) {
+                    $('#online-users').text(`Online Users: ${data.online_users}`);
+                },
+                error: function() {
+                    alert("Failed to fetch online users.");
+                }
+            });
+        }
+    
+        // Evento para exibir usuários ao clicar no botão "View Users"
+        $('#view-users').click(function(event) {
+            event.preventDefault();
+            fetchUsers();
+        });
+    
+        // Evento para exibir estatísticas ao clicar no botão "View Stats"
+        $('#view-stats').click(function(event) {
+            event.preventDefault();
+            getTotalUsers();
+            getOnlineUsers();
+        });
+    
+        // Evento para realizar o logout
+        $('#logout').click(function(event) {
+            event.preventDefault();
+            localStorage.removeItem("authToken"); // Remove o token ao fazer logout
+            alert("Logged out successfully!");
+            window.location.href = "login.html";
+        });
+    
+        // Carrega as informações ao carregar a página
+        $(document).ready(function() {
+            fetchUsers();
+            getTotalUsers();
+            getOnlineUsers();
+        });
+    </script>
+    
+</body>
+
+</html>
