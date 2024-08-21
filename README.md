@@ -37,7 +37,7 @@ Para rodar o projeto, certifique-se de que as seguintes dependências estão ins
 1. Clone o repositório:
 
 ```bash
-git clone https://github.com/seu-usuario/teconect-api.git
+git clone https://github.com/CoderVasco/teconect-api.git
 ```
 
 2. Entre no diretório do projeto:
